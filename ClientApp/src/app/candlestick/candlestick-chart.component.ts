@@ -3,7 +3,6 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  HostListener,
   OnChanges,
   OnDestroy,
   OnInit,
@@ -41,16 +40,12 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   public mouseLeftBias: number = 1.5;
   public showCrossHair: boolean = false;
   public mouseOnChart: boolean = true;
-  private visibleData: HistoricData[] | undefined;
-  private filteredData: HistoricData[] | undefined;
+  private visibleData: HistoricData[] = [];
+  private filteredData: HistoricData[] = [];
   public filterDate: number | undefined;
   private extent: [[number, number], [number, number]] | undefined
   private margin: { top: number, bottom: number, left: number; right: number } = { top: 10, bottom: 40, left: 30, right: 80 };
   private dateFormat: string = "%Y-%m-%dT%H:%M:%S";
-  public drawOn: boolean = false;
-  public drawingStart: boolean = false;
-  public drawingObject: boolean = false;
-  public drawingEnd: boolean = false;
   private onInint: boolean = true;
   private months: any = { 0: 'Jan', 1: 'Feb', 2: 'Mar', 3: 'Apr', 4: 'May', 5: 'Jun', 6: 'Jul', 7: 'Aug', 8: 'Sep', 9: 'Oct', 10: 'Nov', 11: 'Dec' }
   private x1?: number | undefined;
@@ -156,6 +151,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   }
 
   private getDates(data: HistoricData[]): void {
+    var dateFormat = d3.timeParse(this.dateFormat);
     for (var i = 0; i < data.length; i++) {
       var dateString = data[i].date.toString();
       this.data[i].date = dateFormat(dateString);
@@ -233,9 +229,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     this.xAxis = d3.axisBottom(this.xScale)
       .tickFormat((d: number) => {
         var date: Date = new Date(this.dates[d]);
-        var hours = date.getHours()
-        var minutes = (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
-        var amPM = hours < 13 ? 'am' : 'pm'
         return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
       });
 
@@ -406,8 +399,8 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
         this.svg.selectAll("text")
           .attr("fill", 'azure');
 
-        this.xMinIdx = +d3.round(xScaleZ.domain()[0], 'f', 0);
-        this.xMaxIdx = +d3.round(xScaleZ.domain()[1], 'f', 0);
+        this.xMinIdx = +d3.format('0f')(xScaleZ.domain()[0]);
+        this.xMaxIdx = +d3.format('0f')(xScaleZ.domain()[1]);;
         if (this.xMaxIdx === undefined) {
           this.xMaxIdx = this.dates.length;
         }
@@ -455,13 +448,13 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
         this.candles = this.clipPath.selectAll(".candle");
         this.candles.transition()
           .duration(this.transitionDuration)
-          .attr("y", (d: HistoricData) => this.margin.top + this.yScale(Math.max(d.open, d.close)))
-          .attr("height", (d: HistoricData) => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
+          .attr("y", (d) => this.margin.top + this.yScale(Math.max(d[0].open, d[0].close)))
+          .attr("height", (d) => (d[0].open === d[0].close) ? 1 : this.yScale(Math.min(d[0].open, d[0].close)) - this.yScale(Math.max(d[0].open, d[0].close)));
         this.stems = this.clipPath.selectAll(".stem");
         this.stems.transition()
           .duration(this.transitionDuration)
-          .attr("y1", (d: HistoricData) => this.margin.top + this.yScale(d.high))
-          .attr("y2", (d: HistoricData) => this.margin.top + this.yScale(d.low));
+          .attr("y1", (d) => this.margin.top + this.yScale(d[0].high))
+          .attr("y2", (d) => this.margin.top + this.yScale(d[0].low));
 
         this.gY.transition()
           .duration(this.transitionDuration)
@@ -513,9 +506,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
       .call(d3.axisBottom(this.xScale).tickFormat((d: number) => {
         if (d >= 0 && d <= dates.length - 1) {
           var date: Date = new Date(dates[d])
-          var hours = date.getHours()
-          var minutes = (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
-          var amPM = hours < 13 ? 'am' : 'pm'
           return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
         }
       })).selectAll("path, line")
@@ -536,17 +526,17 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     this.candles = this.clipPath.selectAll(".candle");
     this.candles
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
-      .attr("x", (d: HistoricData, i: number) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth()) / 2)
+      .attr("x", (d, i) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth()) / 2)
       .attr("width", this.xBand.bandwidth())
-      .attr("y", (d: HistoricData) => this.margin.top + this.yScale(Math.max(d.open, d.close)))
-      .attr("height", (d: HistoricData) => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
+      .attr("y", (d) => this.margin.top + this.yScale(Math.max(d[0].open, d[0].close)))
+      .attr("height", (d) => (d[0].open === d[0].close) ? 1 : this.yScale(Math.min(d[0].open, d[0].close)) - this.yScale(Math.max(d[0].open, d[0].close)));
     this.stems = this.clipPath.selectAll(".stem");
     this.stems
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
-      .attr("y1", (d: HistoricData) => this.margin.top + this.yScale(d.high))
-      .attr("y2", (d: HistoricData) => this.margin.top + this.yScale(d.low))
-      .attr("x1", (d: HistoricData, i: number) => this.margin.left + this.xScale(i))
-      .attr("x2", (d: HistoricData, i: number) => this.margin.left + this.xScale(i));
+      .attr("y1", (d) => this.margin.top + this.yScale(d[0].high))
+      .attr("y2", (d) => this.margin.top + this.yScale(d[0].low))
+      .attr("x1", (d, i) => this.margin.left + this.xScale(i))
+      .attr("x2", (d, i) => this.margin.left + this.xScale(i));
   }
 
 }

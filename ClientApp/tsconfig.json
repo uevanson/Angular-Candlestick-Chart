@@ -16,11 +16,6 @@
     "typeRoots": [
       "node_modules/@types"
     ],
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
     "lib": [
       "es2018",
       "dom"

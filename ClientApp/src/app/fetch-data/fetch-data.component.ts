@@ -1,21 +1,14 @@
-import { Component, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core'
 
-@Component({
-  selector: 'app-fetch-data',
-  templateUrl: './fetch-data.component.html'
-})
+@Injectable()
 export class FetchDataComponent {
-  public historicData: HistoricData[] = [];
-
-  constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
-    http.get<WeatherForecast[]>(baseUrl + 'weatherforecast').subscribe(result => {
-      this.forecasts = result;
-    }, error => console.error(error));
+  getHistoricDataList() {
+    return teslaHistoricData;
   }
 }
 
-[{
+const teslaHistoricData = [
+  {
   "id": 2483,
   "date": "2020-05-08T00:00:00+00:00",
   "open": 158.753998,
@@ -4044,7 +4037,8 @@ export class FetchDataComponent {
     "close": 1017.030029,
     "adjusted": 1017.030029,
     "volume": 19855000
-  }]
+  }
+]
 
 export interface HistoricData {
   date: Date;
