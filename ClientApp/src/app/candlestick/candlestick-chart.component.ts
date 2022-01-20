@@ -25,7 +25,7 @@ import { AxisDomain } from 'd3';
 export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy{
 
   @ViewChild('candlestickChart', { static: true }) candlestickChart?: ElementRef;
-  private candles: d3.Selection<SVGRectElement, HistoricData[], SVGElement, unknown> | undefined;
+  private candles: d3.Selection<SVGRectElement, RawHistoricData, SVGElement, unknown> | undefined;
   private clipPath: d3.Selection<any, unknown, null, undefined> | undefined;
   private candleFill: string = "green";
   public displayDate: string | undefined;
@@ -45,8 +45,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   public showCrossHair: boolean = false;
   public mouseOnChart: boolean = true;
   private data: RawHistoricData[] = [];
-  private visibleData: HistoricData[] = [];
-  private filteredData: HistoricData[] = [];
+  private filteredData: RawHistoricData[] = [];
   public filterDate: number | undefined;
   private extent: [[number, number], [number, number]] | undefined
   private margin: { top: number, bottom: number, left: number; right: number } = { top: 10, bottom: 40, left: 30, right: 80 };
@@ -82,7 +81,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   private svgLeft?: number | undefined;
   private svgRight?: number | undefined;
   private svgBottom?: number | undefined;
-  private stems: d3.Selection<SVGLineElement, HistoricData[], SVGElement, unknown> | undefined;
+  private stems: d3.Selection<SVGLineElement, RawHistoricData, SVGElement, unknown> | undefined;
   private topOffset: number | undefined;
   private transitionDuration: number = 300;
   private defaultWidth: number = 1000;
@@ -101,24 +100,18 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
 
   ngOnInit(): void {
     this.data = this._fetchDataService.getHistoricDataList();
-    this.visibleData = this.data.map(data => ({
-      
-        date: new Date(data.date),
-          open: data.open,
-            high: data.high,
-              low: data.low,
-                close: data.close
-      
-    }))
-    console.log(this.visibleData)
+    this.data.forEach(d => {
+      d.date = new Date(d.date)
+    });
+    console.log(this.data)
   }
 
   ngAfterViewInit() {
-    console.log('ngAfterViewInit() hit')
     this.svg = d3.select(this.candlestickChart?.nativeElement);
     this.setElementDimensions(window.innerHeight, window.innerWidth);
- 
- 
+    console.log(this.data);
+    this.getDates(this.data);
+    this.drawChart(this.data, this.onInint); 
   }
 
   ngOnChanges() {
@@ -156,21 +149,11 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     this.candlestickChart.nativeElement.style.width = setWidth + 'px';
   }
 
-  private dateParser(date: string, format: string): Date {
-    const parseTime = d3.timeParse(format);
-    var newDate = parseTime(date);
-    if (newDate == null) {
-      return new Date()
-    } else {
-      return newDate;
-    }
-  }
-
-  private getDates(data: HistoricData[]): void {
+  private getDates(data: RawHistoricData[]): void {
     var dateFormat = d3.timeParse(this.dateFormat);
     for (var i = 0; i < data.length; i++) {
       var dateString = data[i].date.toString();
-      this.visibleData[i].date = dateFormat(dateString);
+      data[i].date = dateFormat(dateString);
     }
     this.dates = data.map(d => {
       return d.date
@@ -180,51 +163,15 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     });
   }
 
-  private filterDataByDate(data: any, filter: number): any {
-    const filterDate: Date = new Date(filter);
-    const filteredData = data.filter(val => {
-      return val.date > filterDate
-    })
-    return filteredData
-  }
-
-  private setMaxValue(data: HistoricData[], property: string) {
+  private setMaxValue(data: RawHistoricData[], property: string) {
     return d3.max(data.map(r => r[property]));
   }
 
-  private setMinValue(data: HistoricData[], property: string) {
+  private setMinValue(data: RawHistoricData[], property: string) {
     return d3.min(data.map(r => r[property]));
   }
 
-  private dateSacleBuilder(dates: Date[]): string[] {
-    var dateScale: string[] = [];
-    for (var i = 0; i < dates.length; i++) {
-      if (i > 0 && i < dates.length) {
-        if ((dates[i].getDate() == 1) || (dates[i - 1].getDate() > dates[i].getDate())) {
-          if (dates[i].getFullYear() !== dates[i - 1].getFullYear()) {
-            dateScale[i] = dates[i].getFullYear().toString();
-          } else {
-            dateScale[i] = this.months[this.jsDates[i].getMonth()];
-          }         
-        } else {
-          dateScale[i] = this.jsDates[i].getDate().toString();
-        }
-      } else {
-        if (dates[i].getDate() == 1) {
-          if (dates[i].getMonth() == 1) {
-            dateScale[i] = dates[i].getFullYear().toString();
-          } else {
-            dateScale[i] = this.months[this.jsDates[i].getMonth()];
-          }
-        } else {
-          dateScale[i] = dates[i].getDate().toString();
-        }
-      }
-    }
-    return dateScale
-  }
-
-  private drawChart(data: HistoricData[], init: boolean): void {
+  private drawChart(data: RawHistoricData[], init: boolean): void {
     this.xMin = this.setMinValue(data, "date");
     this.xMax = this.setMaxValue(data, "date");
     var minP = +this.setMinValue(data, "low");
@@ -449,7 +396,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
           this.xMax = this.dates[this.dates.length - 1];
         }
 
-        this.filteredData = this.visibleData.filter(d => ((d.date >= this.xMin) && (d.date <= this.xMax)))
+        this.filteredData = this.data.filter(d => ((d.date >= this.xMin) && (d.date <= this.xMax)))
         var minP = +d3.min(this.filteredData, d => d.low)
         var maxP = +d3.max(this.filteredData, d => d.high)
         var buffer = (maxP - minP) * 0.1
