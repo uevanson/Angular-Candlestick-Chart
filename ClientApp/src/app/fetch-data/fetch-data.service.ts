@@ -7,6 +7,26 @@ export class FetchDataService {
   }
 }
 
+export interface HistoricData {
+  date: Date;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface RawHistoricData {
+  id: number;
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  adjusted: number;
+  volume: number;
+}
+
+
 const teslaHistoricData = [
   {
   "id": 2483,
@@ -4040,10 +4060,4 @@ const teslaHistoricData = [
   }
 ]
 
-export interface HistoricData {
-  date: Date;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
+
