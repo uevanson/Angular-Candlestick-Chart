@@ -4,8 +4,6 @@
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
-    "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "declaration": false,
     "downlevelIteration": true,
@@ -14,6 +12,15 @@
     "importHelpers": true,
     "target": "es2017",
     "module": "es2020",
+    "allowJs": true,
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
     "lib": [
       "es2018",
       "dom"
@@ -22,7 +29,5 @@
       "jquery",
       "d3"
     ]
-  },
-  "angularCompilerOptions": {
   }
 }

@@ -22,15 +22,21 @@
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
-            "tsConfig": "tsconfig.app.json",
-            "assets": [
-              "src/assets"
-            ],
+            "tsConfig": "src/tsconfig.app.json",
+            "assets": [ "src/assets" ],
             "styles": [
-              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/bootswatch/slate/bootstrap.min.css",
+              "node_modules/toastr/build/toastr.min.css",
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [
+              "node_modules/core-js-bundle/minified.js",
+              "node_modules/jquery/dist/jquery.min.js",
+              "node_modules/bootstrap/dist/js/bootstrap.min.js",
+              "node_modules/reflect-metadata/Reflect.js",
+              "node_modules/d3/dist/d3.min.js",
+              "node_modules/toastr/build/toastr.min.js"
+            ]
           },
           "configurations": {
             "production": {
