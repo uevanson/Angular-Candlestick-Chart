@@ -4,13 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
-import { FetchDataComponent } from './fetch-data/fetch-data.component';
+import { FetchDataService } from './fetch-data/fetch-data.service';
 import { CandlestickChartComponent } from './candlestick/candlestick-chart.component';
 
 @NgModule({
   declarations: [
-    AppComponent,
-    FetchDataComponent
+    AppComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -18,7 +17,11 @@ import { CandlestickChartComponent } from './candlestick/candlestick-chart.compo
     FormsModule,
     RouterModule.forRoot([
       { path: '', component: CandlestickChartComponent, pathMatch: 'full' }
-    ],
+    ])
+  ],
+  providers: [
+    FetchDataService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

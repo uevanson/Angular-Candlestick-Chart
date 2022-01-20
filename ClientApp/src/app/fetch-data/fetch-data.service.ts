@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core'
 
 @Injectable()
-export class FetchDataComponent {
+export class FetchDataService {
   getHistoricDataList() {
     return teslaHistoricData;
   }

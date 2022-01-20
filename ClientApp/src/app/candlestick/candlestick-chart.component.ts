@@ -9,7 +9,7 @@ import {
   Renderer2,
   ViewChild
 } from '@angular/core';
-import { HistoricData } from '../fetch-data/fetch-data.component';
+import { HistoricData } from '../fetch-data/fetch-data.service';
 import * as d3 from 'd3';
 import { AxisDomain } from 'd3';
 @Component({
