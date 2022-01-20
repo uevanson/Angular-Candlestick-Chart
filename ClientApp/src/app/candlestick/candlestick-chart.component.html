@@ -1,0 +1,43 @@
+
+<svg id="candlestickChart"
+     #candlestickChart
+     class="chart">
+</svg>
+<div id="displayDate"
+     class="date-ticker"
+     *ngIf="showCrossHair && mouseOnChart"
+     [style.left.px]="xM - 39.5"
+     [style.top.px]="svgBottom - margin.bottom"
+     >
+  <p>{{displayDate}}</p>
+  </div>
+<div id="displayPrice"
+     class="price-ticker"
+     *ngIf="showCrossHair && mouseOnChart"
+     [style.top.px]="yM - 10.5"
+     >
+  <p>{{displayPrice}}</p>
+</div>
+<hr class="price-line"
+    *ngIf="showCrossHair && mouseOnChart"
+    [style.width.px]="leftCrosshairWidth"
+    [style.left.px]="leftOffSet"
+    [style.top.px]="yM - (mouseHeightOffset / 2) - mouseTopBias">
+<hr class="price-line"
+    *ngIf="showCrossHair && mouseOnChart"
+    [style.width.px]="rightCrosshairWidth"
+    [style.left.px]="xM + (mouseWidthOffset / 2)"
+    [style.top.px]="yM - (mouseHeightOffset / 2) - mouseTopBias">
+<div class="date-line"
+     *ngIf="showCrossHair && mouseOnChart"
+     [style.height.px]="topCrosshairHeight"
+     [style.top.px]="topOffset"
+     [style.left.px]="xM - mouseLeftBias"
+     >
+</div>
+<div class="date-line"
+     *ngIf="showCrossHair && mouseOnChart"
+     [style.height.px]="bottomCrosshairHeight"
+     [style.top.px]="yM + (mouseHeightOffset / 2)"
+     [style.left.px]="xM  - mouseLeftBias">
+</div>
