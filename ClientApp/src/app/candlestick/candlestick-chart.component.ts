@@ -99,7 +99,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
 
   ngOnInit(): void {
     this.dataSubscription = this._fetchDataService._teslaHistoricDataSource.subscribe(data => {
-      console.log('data is here')
       this.data = data;
       
     })
