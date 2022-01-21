@@ -6,7 +6,6 @@ import {
   OnChanges,
   OnDestroy,
   OnInit,
-  Renderer2,
   ViewChild
 } from '@angular/core';
 import {
@@ -16,6 +15,7 @@ import {
 } from '../fetch-data/fetch-data.service';
 import * as d3 from 'd3';
 import { AxisDomain } from 'd3';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'candlestick-chart',
@@ -24,6 +24,7 @@ import { AxisDomain } from 'd3';
   })
 export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy{
 
+  private dataSubscription: Subscription;
   @ViewChild('candlestickChart', { static: true }) candlestickChart?: ElementRef;
   private candles: d3.Selection<SVGRectElement, RawHistoricData, SVGElement, unknown> | undefined;
   private clipPath: d3.Selection<any, unknown, null, undefined> | undefined;
@@ -44,8 +45,9 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   public mouseLeftBias: number = 1.5;
   public showCrossHair: boolean = false;
   public mouseOnChart: boolean = true;
-  private data: RawHistoricData[] = [];
-  private filteredData: RawHistoricData[] = [];
+  private data: RawHistoricData[] | undefined;
+  private visibleData: HistoricData[] | undefined;
+  private filteredData: HistoricData[] | undefined;
   public filterDate: number | undefined;
   private extent: [[number, number], [number, number]] | undefined
   private margin: { top: number, bottom: number, left: number; right: number } = { top: 10, bottom: 40, left: 30, right: 80 };
@@ -73,8 +75,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   private yAxis: d3.Axis<AxisDomain> | undefined;
   public dates: Date[] | undefined;
   private datesStrings: string[] | undefined;
-  private jsDates: Date[] | undefined;
-  private selectedTimeFilter: [string, string, string] = ['selectedTimeFilter', 'YTD', 'YTD'];
   private svg?: d3.Selection<any, unknown, null, undefined> | undefined;
   private svgElement?: HTMLElement | undefined;
   private svgTop?: number | undefined;
@@ -91,7 +91,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   private zoom: d3.ZoomBehavior<Element, unknown> | undefined;
 
   constructor(
-    private _renderer: Renderer2,
     private _fetchDataService: FetchDataService
       ) {
   }
@@ -99,25 +98,24 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   
 
   ngOnInit(): void {
-    this.data = this._fetchDataService.getHistoricDataList();
-    this.data.forEach(d => {
-      d.date = new Date(d.date)
-    });
-    console.log(this.data)
+    this.dataSubscription = this._fetchDataService._teslaHistoricDataSource.subscribe(data => {
+      this.svg = d3.select(this.candlestickChart?.nativeElement);
+      this.setElementDimensions(window.innerHeight, window.innerWidth);
+      console.log(data)
+      this.getDates(data);
+      this.drawChart(data, this.onInint);
+    })
   }
 
   ngAfterViewInit() {
-    this.svg = d3.select(this.candlestickChart?.nativeElement);
-    this.setElementDimensions(window.innerHeight, window.innerWidth);
-    console.log(this.data);
-    this.getDates(this.data);
-    this.drawChart(this.data, this.onInint); 
+
   }
 
   ngOnChanges() {
   }
 
   ngOnDestroy() {
+    this.dataSubscription.unsubscribe();
   }
 
 
@@ -149,7 +147,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     this.candlestickChart.nativeElement.style.width = setWidth + 'px';
   }
 
-  private getDates(data: RawHistoricData[]): void {
+  private getDates(data: HistoricData[]): void {
     var dateFormat = d3.timeParse(this.dateFormat);
     for (var i = 0; i < data.length; i++) {
       var dateString = data[i].date.toString();
@@ -163,15 +161,15 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     });
   }
 
-  private setMaxValue(data: RawHistoricData[], property: string) {
+  private setMaxValue(data: HistoricData[], property: string) {
     return d3.max(data.map(r => r[property]));
   }
 
-  private setMinValue(data: RawHistoricData[], property: string) {
+  private setMinValue(data: HistoricData[], property: string) {
     return d3.min(data.map(r => r[property]));
   }
 
-  private drawChart(data: RawHistoricData[], init: boolean): void {
+  private drawChart(data: HistoricData[], init: boolean): void {
     this.xMin = this.setMinValue(data, "date");
     this.xMax = this.setMaxValue(data, "date");
     var minP = +this.setMinValue(data, "low");
@@ -396,7 +394,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
           this.xMax = this.dates[this.dates.length - 1];
         }
 
-        this.filteredData = this.data.filter(d => ((d.date >= this.xMin) && (d.date <= this.xMax)))
+        this.filteredData = this.visibleData.filter(d => ((d.date >= this.xMin) && (d.date <= this.xMax)))
         var minP = +d3.min(this.filteredData, d => d.low)
         var maxP = +d3.max(this.filteredData, d => d.high)
         var buffer = (maxP - minP) * 0.1
