@@ -1,16 +1,36 @@
-/* You can add global styles to this file, and also import other style files */
 
-/* Provide sufficient contrast against white background */
-a {
-  color: #0366d6;
+.parent {
+  background-color: #456089;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-content: stretch;
+  align-items: flex-start;
+  min-height: 300px;
 }
 
-code {
-  color: #e01a76;
+.chartContainer {
+  max-width: 750px;
+  min-width: 250px;
+  min-height: 250px;
+  max-height: 750px;
+  flex: 1 5 auto;
+  background-color: aliceblue;
+  margin: 25px;
+  height: calc(100% - 50px);
+  width: calc(100% - 50px);
+  align-self: center;
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+.titleContainer {
+  align-self: center;
 }
+
+h1, h2 {
+  color: white;
+  text-align: center;
+}
+
