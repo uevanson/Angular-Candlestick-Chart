@@ -348,9 +348,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
           d3.axisBottom(xScaleZ).tickFormat((d: number) => {
             if (d >= 0 && d <= this.dates.length - 1) {
               var date: Date = new Date(this.dates[d])
-              var hours: number = date.getHours()
-              var minutes: string = (date.getMinutes() < 10 ? '0' : '') + date.getMinutes()
-              var amPM: string = hours < 13 ? 'am' : 'pm'
               return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
             }
           })
@@ -409,13 +406,13 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
         this.candles = this.clipPath.selectAll(".candle");
         this.candles.transition()
           .duration(this.transitionDuration)
-          .attr("y", (d) => this.margin.top + this.yScale(Math.max(d[0].open, d[0].close)))
-          .attr("height", (d) => (d[0].open === d[0].close) ? 1 : this.yScale(Math.min(d[0].open, d[0].close)) - this.yScale(Math.max(d[0].open, d[0].close)));
+          .attr("y", (d) => this.margin.top + this.yScale(Math.max(d.open, d.close)))
+          .attr("height", (d) => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
         this.stems = this.clipPath.selectAll(".stem");
         this.stems.transition()
           .duration(this.transitionDuration)
-          .attr("y1", (d) => this.margin.top + this.yScale(d[0].high))
-          .attr("y2", (d) => this.margin.top + this.yScale(d[0].low));
+          .attr("y1", (d) => this.margin.top + this.yScale(d.high))
+          .attr("y2", (d) => this.margin.top + this.yScale(d.low));
 
         this.gY.transition()
           .duration(this.transitionDuration)
@@ -434,8 +431,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private resizeChart(datesStrings: string[]) {
     var dates: Date[] = this.dates.slice(this.xMinIdx, this.xMaxIdx + 1);
     var datesStrings: string[] = this.datesStrings.slice(this.xMinIdx, this.xMaxIdx + 1);
-    console.log(this.datesStrings)
-    console.log(datesStrings)
     this.xMin = this.setMinValue(this.filteredData, "date");
     this.xMax = this.setMaxValue(this.filteredData, "date");
     var minP = +this.setMinValue(this.filteredData, "low")
@@ -491,13 +486,13 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
       .attr("x", (d, i) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth()) / 2)
       .attr("width", this.xBand.bandwidth())
-      .attr("y", (d) => this.margin.top + this.yScale(Math.max(d[0].open, d[0].close)))
-      .attr("height", (d) => (d[0].open === d[0].close) ? 1 : this.yScale(Math.min(d[0].open, d[0].close)) - this.yScale(Math.max(d[0].open, d[0].close)));
+      .attr("y", (d) => this.margin.top + this.yScale(Math.max(d.open, d.close)))
+      .attr("height", (d) => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
     this.stems = this.clipPath.selectAll(".stem");
     this.stems
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
-      .attr("y1", (d) => this.margin.top + this.yScale(d[0].high))
-      .attr("y2", (d) => this.margin.top + this.yScale(d[0].low))
+      .attr("y1", (d) => this.margin.top + this.yScale(d.high))
+      .attr("y2", (d) => this.margin.top + this.yScale(d.low))
       .attr("x1", (d, i) => this.margin.left + this.xScale(i))
       .attr("x2", (d, i) => this.margin.left + this.xScale(i));
   }
