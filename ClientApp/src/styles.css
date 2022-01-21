@@ -18,10 +18,8 @@
   min-height: 250px;
   max-height: 750px;
   flex: 1 5 auto;
-  background-color: aliceblue;
-  margin: 25px;
-  height: calc(100% - 50px);
-  width: calc(100% - 50px);
+  height: calc(100%);
+  width: calc(100%);
   align-self: center;
 }
 

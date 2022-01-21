@@ -3,7 +3,6 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  OnChanges,
   OnDestroy,
   OnInit,
   ViewChild
@@ -32,11 +31,9 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private candleFill: string = "green";
   public displayDate: string | undefined;
   public displayPrice: string | undefined;
-  private el: HTMLElement;
   private gY: d3.Selection<SVGGElement, any, any, any> | undefined;
   private gX: d3.Selection<SVGElement, unknown, HTMLElement, any> | undefined;
   public leftCrosshairWidth: number = 0;
-  private leftOffSet: number | undefined;
   public rightCrosshairWidth: number = 0;
   public topCrosshairHeight: number = 0;
   public bottomCrosshairHeight: number = 0;
@@ -55,15 +52,8 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private dateFormat: string = "%Y-%m-%d";
   private onInint: boolean = true;
   private months: any = { 0: 'Jan', 1: 'Feb', 2: 'Mar', 3: 'Apr', 4: 'May', 5: 'Jun', 6: 'Jul', 7: 'Aug', 8: 'Sep', 9: 'Oct', 10: 'Nov', 11: 'Dec' }
-  private x1?: number | undefined;
-  private x2?: number | undefined;
-  private xM?: number | undefined;
-  private y1?: number | undefined;
-  private y2?: number | undefined;
-  private yM?: number | undefined;
   private xMin?: Date | undefined;
   private xMax?: Date | undefined;
-
   private xMinIdx: number | undefined;
   private xMaxIdx: number | undefined;
   private xScale: d3.ScaleLinear<number, number, never>;
@@ -77,18 +67,10 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   public dates: Date[] | undefined;
   private datesStrings: string[] | undefined;
   private svg?: d3.Selection<any, unknown, null, undefined> | undefined;
-  private svgElement?: HTMLElement | undefined;
-  private svgTop?: number | undefined;
-  private svgLeft?: number | undefined;
-  private svgRight?: number | undefined;
-  private svgBottom?: number | undefined;
   private stems: d3.Selection<SVGLineElement, RawHistoricData, SVGElement, unknown> | undefined;
-  private topOffset: number | undefined;
   private transitionDuration: number = 300;
   private defaultWidth: number = 1000;
   private defaultHeight: number = 900;
-  private xScaleFactor: number | undefined;
-  private yScaleFactor: number | undefined;
   private zoom: d3.ZoomBehavior<Element, unknown> | undefined;
 
   constructor(
@@ -117,6 +99,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   public onResize(event: any) {
+    this.setElementDimensions(window.innerHeight, window.innerWidth);
     this.resizeChart(this.datesStrings);
   }
 
@@ -138,10 +121,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
 
   private setElementDimensions(windowHeight: number, windowWidth: number): void {
     var rect: DOMRect = this.candlestickChart.nativeElement.getBoundingClientRect();
-    this.svgTop = rect.top;
-    this.svgLeft = rect.left;
-    this.svgRight = rect.right;
-    this.svgBottom = rect.bottom;
     let setHeight: number = windowHeight - rect.top;
     let setWidth: number = windowWidth - rect.left;
     this.candlestickChart.nativeElement.style.height = setHeight + 'px';
@@ -184,7 +163,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.yScale = d3.scaleLinear().domain([this.yMin, this.yMax]).range([this.innerHeight(this.defaultHeight), 0]).nice();
     this.yMin = this.yScale.domain()[0];
     this.yMax = this.yScale.domain()[1];
-    this.yScaleFactor = (this.yMax - this.yMin) / this.innerHeight(this.defaultHeight);
     this.xScale = d3.scaleLinear([0, this.innerWidth(this.defaultWidth)]).domain([this.xMinIdx, this.xMaxIdx]);
     this.xBand = d3.scaleBand([0, this.innerWidth(this.defaultWidth)]).domain(this.datesStrings).padding(this.xPadding);
     this.yAxis = d3.axisRight(this.yScale).tickFormat(d3.format(",.2f"));
@@ -328,8 +306,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
       .on('zoom.end', (event) => this.zoomend(event));
     this.svg.call(this.zoom)
 
-    this.svgElement = document.getElementById('candlestickChart');
-
   }
 
   private zoomed(event): void {
@@ -402,7 +378,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
         this.yScale.domain([+f(this.yMin), +f(this.yMax)]).nice();
         this.yMin = this.yScale.domain()[0];
         this.yMax = this.yScale.domain()[1];
-        this.yScaleFactor = (this.yMax - this.yMin) / this.innerHeight(this.defaultHeight);
         this.candles = this.clipPath.selectAll(".candle");
         this.candles.transition()
           .duration(this.transitionDuration)
@@ -442,7 +417,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.yScale = this.yScale.rangeRound([this.innerHeight(this.defaultHeight), 0]);
     this.yMin = this.yScale.domain()[0];
     this.yMax = this.yScale.domain()[1];
-    this.yScaleFactor = (this.yMax - this.yMin) / this.innerHeight(this.defaultHeight);
     this.xBand = d3.scaleBand([0, this.innerWidth(this.defaultWidth)]).domain(datesStrings).padding(this.xPadding);
     this.svg.select("#rect")
       .transition()
