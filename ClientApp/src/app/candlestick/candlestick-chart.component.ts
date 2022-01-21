@@ -23,7 +23,7 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./candlestick-chart.component.css'],
   host: { '(window: resize)': 'onResize($event)' }
   })
-export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy{
+export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestroy{
 
   private dataSubscription: Subscription;
   @ViewChild('candlestickChart', { static: true }) candlestickChart?: ElementRef;
@@ -106,19 +106,19 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     this.setElementDimensions(window.innerHeight, window.innerWidth);
     this.dataSubscription = this._fetchDataService._teslaHistoricDataSource.subscribe(data => {
       this.data = data;
-      console.log(this.data);
       this.getDates(this.data);
       this.drawChart(this.data, this.onInint);
     })
   }
 
-  ngOnChanges(): void {
-  }
 
   ngOnDestroy(): void {
     this.dataSubscription.unsubscribe();
   }
 
+  public onResize(event: any) {
+    this.resizeChart(this.datesStrings);
+  }
 
   private innerWidth(defaultWidth: number): number {
     if (this.candlestickChart) {
@@ -142,7 +142,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
     this.svgLeft = rect.left;
     this.svgRight = rect.right;
     this.svgBottom = rect.bottom;
-    console.log(rect)
     let setHeight: number = windowHeight - rect.top;
     let setWidth: number = windowWidth - rect.left;
     this.candlestickChart.nativeElement.style.height = setHeight + 'px';
@@ -172,8 +171,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   }
 
   private drawChart(data: RawHistoricData[], init: boolean): void {
-    console.log(data)
-    console.log(this.datesStrings)
     this.xMin = this.setMinValue(data, "date");
     this.xMax = this.setMaxValue(data, "date");
     var minP = +this.setMinValue(data, "low");
@@ -206,7 +203,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
         .call(d3.axisBottom(this.xScale).tickFormat((d: number) => {
           if (d >= 0 && d <= this.dates.length - 1) {
             var date: Date = new Date(this.dates[d])
-            var hours = date.getHours()
             return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
           }
         }))
@@ -438,6 +434,8 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
   private resizeChart(datesStrings: string[]) {
     var dates: Date[] = this.dates.slice(this.xMinIdx, this.xMaxIdx + 1);
     var datesStrings: string[] = this.datesStrings.slice(this.xMinIdx, this.xMaxIdx + 1);
+    console.log(this.datesStrings)
+    console.log(datesStrings)
     this.xMin = this.setMinValue(this.filteredData, "date");
     this.xMax = this.setMaxValue(this.filteredData, "date");
     var minP = +this.setMinValue(this.filteredData, "low")
