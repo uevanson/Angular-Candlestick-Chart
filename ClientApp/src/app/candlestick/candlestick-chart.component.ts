@@ -99,16 +99,17 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnChang
 
   ngOnInit(): void {
     this.dataSubscription = this._fetchDataService._teslaHistoricDataSource.subscribe(data => {
-      this.svg = d3.select(this.candlestickChart?.nativeElement);
-      this.setElementDimensions(window.innerHeight, window.innerWidth);
-      console.log(data)
-      this.getDates(data);
-      this.drawChart(data, this.onInint);
+      console.log('data is here')
+      this.data = data;
+      
     })
   }
 
   ngAfterViewInit() {
-
+    console.log('afterviewinit')
+    this.svg = d3.select(this.candlestickChart?.nativeElement);
+    this.setElementDimensions(window.innerHeight, window.innerWidth);
+    this.drawChart(this.data, this.onInint);
   }
 
   ngOnChanges() {
