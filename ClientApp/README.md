@@ -1,6 +1,8 @@
 # Angular_Demo
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 12.0.2.
+This project demonstrates a simple Candlestick Chart build using d3.js and simulates a mock API call to retrieve data.
+The Chart is built to suport zoom and pan along with response to window size.
 
 ## Development server
 
