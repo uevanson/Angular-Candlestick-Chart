@@ -304,40 +304,36 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   private zoomed(event): void {
-      var t = event.transform;
-      let xScaleZ = t.rescaleX(this.xScale);
-      if ((xScaleZ.domain()[1] - xScaleZ.domain()[0]) > 10) {
+    var t = event.transform;
+    let xScaleZ = t.rescaleX(this.xScale);
+    this.xTicks = this.weeksScale(xScaleZ.domain()[0], xScaleZ.domain()[1], 2);
+    if ((xScaleZ.domain()[1] - xScaleZ.domain()[0]) > 10) {
 
-        this.gX.call(
-          d3.axisBottom(xScaleZ).tickFormat((d: number) => {
-            if (d >= 0 && d <= this.dates.length - 1) {
-              var date: Date = new Date(this.dates[d])
-              return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
-            }
-          })
-        ).selectAll("path, line")
-          .attr("stroke", 'azure');
+      this.gX.call(
+        d3.axisBottom(xScaleZ).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks)
+      ).selectAll("path, line")
+        .attr("stroke", 'azure');
 
-        this.svg.selectAll("text")
-          .attr("fill", 'azure');
+      this.svg.selectAll("text")
+        .attr("fill", 'azure');
 
-        this.xMinIdx = +d3.format('0f')(xScaleZ.domain()[0]);
-        this.xMaxIdx = +d3.format('0f')(xScaleZ.domain()[1]);;
-        if (this.xMaxIdx === undefined) {
-          this.xMaxIdx = this.dates.length;
-        }
-        if (0 > this.xMinIdx) {
-          this.xMinIdx = 0;
-        }
-        this.candles = this.clipPath.selectAll(".candle");
-        this.candles
-          .attr("x", (d, i) => this.margin.left + xScaleZ(i) - (this.xScale.bandwidth() * t.k) / 2)
-          .attr("width", this.xScale.bandwidth() * t.k);
-        this.stems = this.clipPath.selectAll(".stem");
-        this.stems
-          .attr("x1", (d, i) => this.margin.left + xScaleZ(i))
-          .attr("x2", (d, i) => this.margin.left + xScaleZ(i));
+      this.xMinIdx = +d3.format('0f')(xScaleZ.domain()[0]);
+      this.xMaxIdx = +d3.format('0f')(xScaleZ.domain()[1]);;
+      if (this.xMaxIdx === undefined) {
+        this.xMaxIdx = this.dates.length;
       }
+      if (0 > this.xMinIdx) {
+        this.xMinIdx = 0;
+      }
+      this.candles = this.clipPath.selectAll(".candle");
+      this.candles
+        .attr("x", (d, i) => this.margin.left + xScaleZ(i) - (this.xScale.bandwidth() * t.k) / 2)
+        .attr("width", this.xScale.bandwidth() * t.k);
+      this.stems = this.clipPath.selectAll(".stem");
+      this.stems
+        .attr("x1", (d, i) => this.margin.left + xScaleZ(i))
+        .attr("x2", (d, i) => this.margin.left + xScaleZ(i));
+    }
     
   }
 
@@ -400,12 +396,16 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private resizeChart(): void {
     this.xMin = this.setMinValue(this.filteredData, "date");
     this.xMax = this.setMaxValue(this.filteredData, "date");
+    this.xRange = [0, this.innerWidth(this.defaultWidth)];
+    this.xDomain = this.weekdaysScale(this.xMin, this.xMax, 0);
+    this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
+    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2);
+
     var minP = +this.setMinValue(this.filteredData, "low")
     var maxP = +this.setMaxValue(this.filteredData, "high")
     var buffer = (maxP - minP) * 0.1
     this.yMin = minP - buffer
     this.yMax = maxP + buffer
-    this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
     this.yScale = this.yScale.rangeRound([this.innerHeight(this.defaultHeight), 0]);
     this.yMin = this.yScale.domain()[0];
     this.yMax = this.yScale.domain()[1];
