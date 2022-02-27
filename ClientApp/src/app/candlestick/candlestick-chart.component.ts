@@ -56,12 +56,16 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private xMax?: Date | undefined;
   private xMinIdx: number | undefined;
   private xMaxIdx: number | undefined;
-  private xScale: d3.ScaleLinear<number, number, never>;
-  private xAxis: d3.Axis<d3.AxisDomain>;
+  private xRange: [number, number] | undefined;
+  private xDomain: Date[] | undefined;
+  private xFormat: string = "%b %-d";
+  private xScale: d3.ScaleBand<Date> | undefined;
+  private xTicks: Date[];
+  private xAxis: d3.Axis<d3.AxisDomain> | undefined;
   private xPadding: number = 0.5;
+  private X: [] | undefined;
   private yMin?: number | undefined;
   private yMax?: number | undefined;
-  private xBand: d3.ScaleBand<string>;
   public yScale: d3.ScaleLinear<number, number, never>;
   private yAxis: d3.Axis<AxisDomain> | undefined;
   public dates: Date[] | undefined;
@@ -100,7 +104,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
 
   public onResize(event: any) {
     this.setElementDimensions(window.innerHeight, window.innerWidth);
-    this.resizeChart(this.datesStrings);
+    this.resizeChart();
   }
 
   private innerWidth(defaultWidth: number): number {
@@ -128,7 +132,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   private getDates(data: RawHistoricData[]): void {
-    var dateFormat = d3.timeParse(this.dateFormat);
+    var dateFormat = d3.utcParse(this.dateFormat);
     for (var i = 0; i < data.length; i++) {
       var dateString = data[i].date;
       data[i].date = dateFormat(dateString);
@@ -152,25 +156,27 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private drawChart(data: RawHistoricData[], init: boolean): void {
     this.xMin = this.setMinValue(data, "date");
     this.xMax = this.setMaxValue(data, "date");
+    var date = d => d.date
+    const X = d3.map(data, date);
+    const weeks = (start, stop, stride) => d3.utcMonday.every(stride).range(start, stop);
+    const weekdays = (start, stop) => d3.utcDays(start, stop, 1).filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6);
+    this.xRange = [0, this.innerWidth(this.defaultWidth)];
+    this.xDomain = weekdays(this.xMin, this.xMax);
+    this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
+    this.xTicks = weeks(d3.min(this.xDomain), d3.max(this.xDomain), 2);
+    this.xAxis = d3.axisBottom(this.xScale).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks);
     var minP = +this.setMinValue(data, "low");
     var maxP = +this.setMaxValue(data, "high");
     var buffer = (maxP - minP) * 0.1;
     this.yMin = minP - buffer;
     this.yMax = maxP + buffer;
-    this.xMinIdx = 0;
-    this.xMaxIdx = data.length;
     this.filteredData = data;
     this.yScale = d3.scaleLinear().domain([this.yMin, this.yMax]).range([this.innerHeight(this.defaultHeight), 0]).nice();
     this.yMin = this.yScale.domain()[0];
     this.yMax = this.yScale.domain()[1];
-    this.xScale = d3.scaleLinear([0, this.innerWidth(this.defaultWidth)]).domain([this.xMinIdx, this.xMaxIdx]);
-    this.xBand = d3.scaleBand([0, this.innerWidth(this.defaultWidth)]).domain(this.datesStrings).padding(this.xPadding);
     this.yAxis = d3.axisRight(this.yScale).tickFormat(d3.format(",.2f"));
-    this.xAxis = d3.axisBottom(this.xScale)
-      .tickFormat((d: number) => {
-        var date: Date = new Date(this.dates[d]);
-        return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
-      });
+    console.log(this.xDomain[0])
+    console.log(X[0])
 
     if (!init) {
       this.svg.select<SVGGElement>('#xAxis')
@@ -178,12 +184,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
         .duration(this.transitionDuration)
         .delay(this.transitionDuration)
         .attr('transform', `translate(${this.margin.left},${this.innerHeight(this.defaultHeight) + this.margin.top})`)
-        .call(d3.axisBottom(this.xScale).tickFormat((d: number) => {
-          if (d >= 0 && d <= this.dates.length - 1) {
-            var date: Date = new Date(this.dates[d])
-            return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
-          }
-        }))
+        .call(d3.axisBottom(this.xScale).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks))
         .selectAll("path, line")
         .attr("stroke", 'azure');
 
@@ -235,16 +236,16 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
           enter
             .append("line")
             .attr("class", "stem")
-            .attr("x1", (d, i) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth() / 2))
-            .attr("x2", (d, i) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth() / 2))
+            .attr("x1", (d) => { return this.margin.left + this.xScale(d.date) })
+            .attr("x2", (d) => { return this.margin.left + this.xScale(d.date) })
             .attr("y1", d => this.margin.top + this.yScale(d.high))
             .attr("y2", d => this.margin.top + this.yScale(d.low))
             .attr("stroke", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
         ,
         update =>
           update
-            .attr("x1", (d, i) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth() / 2))
-            .attr("x2", (d, i) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth() / 2))
+            .attr("x1", d => { return this.margin.left + this.xScale(d.date) })
+            .attr("x2", d => { return this.margin.left + this.xScale(d.date) })
             .attr("y1", d => this.margin.top + this.yScale(d.high))
             .attr("y2", d => this.margin.top + this.yScale(d.low))
             .attr("stroke", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
@@ -263,19 +264,19 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
         enter =>
           enter
             .append("rect")
-            .attr('x', (d, i) => this.margin.left + this.xScale(i) - this.xBand.bandwidth())
+            .attr('x', d => this.margin.left + this.xScale(d.date) - this.xScale.bandwidth() / 2)
             .attr("class", "candle")
             .attr('y', d => this.margin.top + this.yScale(Math.max(d.open, d.close)))
-            .attr('width', this.xBand.bandwidth())
+            .attr('width', this.xScale.bandwidth())
             .attr('height', d => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)))
             .attr("fill", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : this.candleFill)
             .attr("stroke", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
         ,
         update =>
           update
-            .attr('x', (d, i) => this.margin.left + this.xScale(i) - this.xBand.bandwidth())
+            .attr('x', d => this.margin.left + this.xScale(d.date) - this.xScale.bandwidth() / 2)
             .attr('y', d => this.margin.top + this.yScale(Math.max(d.open, d.close)))
-            .attr('width', this.xBand.bandwidth())
+            .attr('width', this.xScale.bandwidth())
             .attr('height', d => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)))
             .attr("fill", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : this.candleFill)
             .attr("stroke", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
@@ -343,8 +344,8 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
         }
         this.candles = this.clipPath.selectAll(".candle");
         this.candles
-          .attr("x", (d, i) => this.margin.left + xScaleZ(i) - (this.xBand.bandwidth() * t.k) / 2)
-          .attr("width", this.xBand.bandwidth() * t.k);
+          .attr("x", (d, i) => this.margin.left + xScaleZ(i) - (this.xScale.bandwidth() * t.k) / 2)
+          .attr("width", this.xScale.bandwidth() * t.k);
         this.stems = this.clipPath.selectAll(".stem");
         this.stems
           .attr("x1", (d, i) => this.margin.left + xScaleZ(i))
@@ -403,9 +404,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   
 }
 
-  private resizeChart(datesStrings: string[]) {
-    var dates: Date[] = this.dates.slice(this.xMinIdx, this.xMaxIdx + 1);
-    var datesStrings: string[] = this.datesStrings.slice(this.xMinIdx, this.xMaxIdx + 1);
+  private resizeChart(): void {
     this.xMin = this.setMinValue(this.filteredData, "date");
     this.xMax = this.setMaxValue(this.filteredData, "date");
     var minP = +this.setMinValue(this.filteredData, "low")
@@ -413,11 +412,11 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     var buffer = (maxP - minP) * 0.1
     this.yMin = minP - buffer
     this.yMax = maxP + buffer
-    this.xScale = this.xScale.rangeRound([0, this.innerWidth(this.defaultWidth)]).domain([-1, dates.length]);
+    this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
     this.yScale = this.yScale.rangeRound([this.innerHeight(this.defaultHeight), 0]);
     this.yMin = this.yScale.domain()[0];
     this.yMax = this.yScale.domain()[1];
-    this.xBand = d3.scaleBand([0, this.innerWidth(this.defaultWidth)]).domain(datesStrings).padding(this.xPadding);
+
     this.svg.select("#rect")
       .transition()
       .duration(0)
@@ -435,12 +434,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
       .transition().ease(d3.easePolyInOut)
       .duration(this.transitionDuration)
       .attr('transform', `translate(${this.margin.left},${this.innerHeight(this.defaultHeight) + this.margin.top})`)
-      .call(d3.axisBottom(this.xScale).tickFormat((d: number) => {
-        if (d >= 0 && d <= dates.length - 1) {
-          var date: Date = new Date(dates[d])
-          return date.getDate() + ' ' + this.months[date.getMonth()] + date.getFullYear().toString().substring(2, 4)
-        }
-      })).selectAll("path, line")
+      .call(this.xAxis = d3.axisBottom(this.xScale).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks)).selectAll("path, line")
       .attr("stroke", 'azure');
 
     this.svg.select<SVGGElement>('#yAxis')
@@ -458,17 +452,17 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.candles = this.clipPath.selectAll(".candle");
     this.candles
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
-      .attr("x", (d, i) => this.margin.left + this.xScale(i) - (this.xBand.bandwidth()) / 2)
-      .attr("width", this.xBand.bandwidth())
-      .attr("y", (d) => this.margin.top + this.yScale(Math.max(d.open, d.close)))
-      .attr("height", (d) => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
+      .attr("x", d => this.margin.left + this.xScale(d.date) - this.xScale.bandwidth() / 2)
+      .attr("width", this.xScale.bandwidth())
+      .attr("y", d => this.margin.top + this.yScale(Math.max(d.open, d.close)))
+      .attr("height", d => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
     this.stems = this.clipPath.selectAll(".stem");
     this.stems
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
-      .attr("y1", (d) => this.margin.top + this.yScale(d.high))
-      .attr("y2", (d) => this.margin.top + this.yScale(d.low))
-      .attr("x1", (d, i) => this.margin.left + this.xScale(i))
-      .attr("x2", (d, i) => this.margin.left + this.xScale(i));
+      .attr("y1", d => this.margin.top + this.yScale(d.high))
+      .attr("y2", d => this.margin.top + this.yScale(d.low))
+      .attr("x1", d => this.margin.left + this.xScale(d.date))
+      .attr("x2", d => this.margin.left + this.xScale(d.date));
   }
 
 }
