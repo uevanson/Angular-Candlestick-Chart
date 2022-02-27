@@ -156,14 +156,10 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private drawChart(data: RawHistoricData[], init: boolean): void {
     this.xMin = this.setMinValue(data, "date");
     this.xMax = this.setMaxValue(data, "date");
-    var date = d => d.date
-    const X = d3.map(data, date);
-    const weeks = (start, stop, stride) => d3.utcMonday.every(stride).range(start, stop);
-    const weekdays = (start, stop) => d3.utcDays(start, stop, 1).filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6);
     this.xRange = [0, this.innerWidth(this.defaultWidth)];
-    this.xDomain = weekdays(this.xMin, this.xMax);
+    this.xDomain = this.weekdaysScale(this.xMin, this.xMax, 1);
     this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
-    this.xTicks = weeks(d3.min(this.xDomain), d3.max(this.xDomain), 2);
+    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2);
     this.xAxis = d3.axisBottom(this.xScale).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks);
     var minP = +this.setMinValue(data, "low");
     var maxP = +this.setMaxValue(data, "high");
@@ -175,8 +171,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.yMin = this.yScale.domain()[0];
     this.yMax = this.yScale.domain()[1];
     this.yAxis = d3.axisRight(this.yScale).tickFormat(d3.format(",.2f"));
-    console.log(this.xDomain[0])
-    console.log(X[0])
 
     if (!init) {
       this.svg.select<SVGGElement>('#xAxis')
@@ -313,13 +307,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
       var t = event.transform;
       let xScaleZ = t.rescaleX(this.xScale);
       if ((xScaleZ.domain()[1] - xScaleZ.domain()[0]) > 10) {
-        let hideTicksWithoutLabel = function () {
-          d3.selectAll('.xAxis .tick text').each(function (d: HTMLElement) {
-            if (d.innerHTML === '') {
-              d.parentElement.style.display = 'none';
-            }
-          })
-        }
 
         this.gX.call(
           d3.axisBottom(xScaleZ).tickFormat((d: number) => {
@@ -350,9 +337,15 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
         this.stems
           .attr("x1", (d, i) => this.margin.left + xScaleZ(i))
           .attr("x2", (d, i) => this.margin.left + xScaleZ(i));
-        hideTicksWithoutLabel();
       }
     
+  }
+
+  private weeksScale(start: Date, stop: Date, stride: number): Date[] {
+    return d3.utcMonday.every(stride).range(start, stop);
+  }
+  private weekdaysScale(start: Date, stop: Date, addDays: number): Date[] {
+    return d3.utcDays(start, new Date(stop.setDate(stop.getDate() + addDays)), 1).filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6);
   }
 
   private zoomend(event): void {
