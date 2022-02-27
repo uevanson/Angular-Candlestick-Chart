@@ -51,7 +51,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private margin: { top: number, bottom: number, left: number; right: number } = { top: 10, bottom: 40, left: 30, right: 80 };
   private dateFormat: string = "%Y-%m-%d";
   private onInint: boolean = true;
-  private months: any = { 0: 'Jan', 1: 'Feb', 2: 'Mar', 3: 'Apr', 4: 'May', 5: 'Jun', 6: 'Jul', 7: 'Aug', 8: 'Sep', 9: 'Oct', 10: 'Nov', 11: 'Dec' }
   private xMin?: Date | undefined;
   private xMax?: Date | undefined;
   private xMinIdx: number | undefined;
@@ -63,13 +62,11 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private xTicks: Date[];
   private xAxis: d3.Axis<d3.AxisDomain> | undefined;
   private xPadding: number = 0.5;
-  private X: [] | undefined;
   private yMin?: number | undefined;
   private yMax?: number | undefined;
   public yScale: d3.ScaleLinear<number, number, never>;
   private yAxis: d3.Axis<AxisDomain> | undefined;
   public dates: Date[] | undefined;
-  private datesStrings: string[] | undefined;
   private svg?: d3.Selection<any, unknown, null, undefined> | undefined;
   private stems: d3.Selection<SVGLineElement, RawHistoricData, SVGElement, unknown> | undefined;
   private transitionDuration: number = 300;
@@ -85,6 +82,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   
 
   ngOnInit(): void {
+
   }
 
   ngAfterViewInit(): void {
@@ -92,7 +90,11 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.setElementDimensions(window.innerHeight, window.innerWidth);
     this.dataSubscription = this._fetchDataService._teslaHistoricDataSource.subscribe(data => {
       this.data = data;
-      this.getDates(this.data);
+      var dateFormat = d3.utcParse(this.dateFormat);
+      for (var i = 0; i < this.data.length; i++) {
+        var dateString = this.data[i].date;
+        this.data[i].date = dateFormat(dateString);
+      }
       this.drawChart(this.data, this.onInint);
     })
   }
@@ -129,20 +131,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     let setWidth: number = windowWidth - rect.left;
     this.candlestickChart.nativeElement.style.height = setHeight + 'px';
     this.candlestickChart.nativeElement.style.width = setWidth + 'px';
-  }
-
-  private getDates(data: RawHistoricData[]): void {
-    var dateFormat = d3.utcParse(this.dateFormat);
-    for (var i = 0; i < data.length; i++) {
-      var dateString = data[i].date;
-      data[i].date = dateFormat(dateString);
-    }
-    this.dates = data.map(d => {
-      return d.date
-    });
-    this.datesStrings = data.map(d => {
-      return d.date.toString();
-    });
   }
 
   private setMaxValue(data: HistoricData[], property: string): any {
