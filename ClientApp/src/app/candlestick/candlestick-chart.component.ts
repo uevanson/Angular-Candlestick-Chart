@@ -291,6 +291,13 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
 
   }
 
+  private weeksScale(start: Date, stop: Date, stride: number): Date[] {
+    return d3.utcMonday.every(stride).range(start, stop);
+  }
+  private weekdaysScale(start: Date, stop: Date, addDays: number): Date[] {
+    return d3.utcDays(start, new Date(stop.setDate(stop.getDate() + addDays)), 1).filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6);
+  }
+
   private zoomed(event): void {
     var t = event.transform;
     let xScaleZ = t.rescaleX(this.xScale);
@@ -325,12 +332,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     
   }
 
-  private weeksScale(start: Date, stop: Date, stride: number): Date[] {
-    return d3.utcMonday.every(stride).range(start, stop);
-  }
-  private weekdaysScale(start: Date, stop: Date, addDays: number): Date[] {
-    return d3.utcDays(start, new Date(stop.setDate(stop.getDate() + addDays)), 1).filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6);
-  }
 
   private zoomend(event): void {
     this.xMin = this.dates[this.xMinIdx];
