@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "Angular_Demo": {
+    "Angular_Candlestick_Chart": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:application": {
@@ -73,10 +73,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "Angular_Demo:build:production"
+              "browserTarget": "Angular_Candlestick_Chart:build:production"
             },
             "development": {
-              "browserTarget": "Angular_Demo:build:development",
+              "browserTarget": "Angular_Candlestick_Chart:build:development",
               "proxyConfig": "proxy.conf.js"
             }
           },
@@ -85,7 +85,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "Angular_Demo:build"
+            "browserTarget": "Angular_Candlestick_Chart:build"
           }
         },
         "test": {
@@ -133,5 +133,5 @@
       }
     }
   },
-  "defaultProject": "Angular_Demo"
+  "defaultProject": "Angular_Candlestick_Chart"
 }
