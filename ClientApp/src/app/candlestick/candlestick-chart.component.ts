@@ -44,7 +44,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   public showCrossHair: boolean = false;
   public mouseOnChart: boolean = true;
   private data: RawHistoricData[] | undefined;
-  private visibleData: HistoricData[] | undefined;
   private filteredData: HistoricData[] | undefined;
   public filterDate: number | undefined;
   private extent: [[number, number], [number, number]] | undefined
@@ -53,8 +52,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   private onInint: boolean = true;
   private xMin?: Date | undefined;
   private xMax?: Date | undefined;
-  private xMinIdx: number | undefined;
-  private xMaxIdx: number | undefined;
   private xRange: [number, number] | undefined;
   private xDomain: Date[] | undefined;
   private xFormat: string = "%b %-d";
@@ -286,7 +283,6 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
       .translateExtent(this.extent)
       .extent(this.extent)
       .on('zoom', (event) => this.zoomed(event))
-      .on('zoom.end', (event) => this.zoomend(event));
     this.svg.call(this.zoom)
 
   }
@@ -299,88 +295,25 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   private zoomed(event): void {
-    var t = event.transform;
-    let xScaleZ = t.rescaleX(this.xScale);
-    this.xTicks = this.weeksScale(xScaleZ.domain()[0], xScaleZ.domain()[1], 2);
-    if ((xScaleZ.domain()[1] - xScaleZ.domain()[0]) > 10) {
-
-      this.gX.call(
-        d3.axisBottom(xScaleZ).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks)
-      ).selectAll("path, line")
-        .attr("stroke", 'azure');
-
-      this.svg.selectAll("text")
-        .attr("fill", 'azure');
-
-      this.xMinIdx = +d3.format('0f')(xScaleZ.domain()[0]);
-      this.xMaxIdx = +d3.format('0f')(xScaleZ.domain()[1]);;
-      if (this.xMaxIdx === undefined) {
-        this.xMaxIdx = this.dates.length;
-      }
-      if (0 > this.xMinIdx) {
-        this.xMinIdx = 0;
-      }
-      this.candles = this.clipPath.selectAll(".candle");
-      this.candles
-        .attr("x", (d, i) => this.margin.left + xScaleZ(i) - (this.xScale.bandwidth() * t.k) / 2)
-        .attr("width", this.xScale.bandwidth() * t.k);
-      this.stems = this.clipPath.selectAll(".stem");
-      this.stems
-        .attr("x1", (d, i) => this.margin.left + xScaleZ(i))
-        .attr("x2", (d, i) => this.margin.left + xScaleZ(i));
-    }
-    
+    this.xScale = this.xScale.range([0, this.innerWidth(this.defaultWidth)].map(d => event.transform.applyX(d)));
+    this.yScale = this.yScale.range([this.innerHeight(this.defaultHeight), 0].map(d => event.transform.applyY(d)))
+    this.candles = this.clipPath.selectAll(".candle");
+    this.candles
+      .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
+      .attr("x", d => this.margin.left + this.xScale(d.date) - this.xScale.bandwidth() / 2)
+      .attr("width", this.xScale.bandwidth())
+      .attr("y", d => this.margin.top + this.yScale(Math.max(d.open, d.close)))
+      .attr("height", d => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
+    this.stems = this.clipPath.selectAll(".stem");
+    this.stems
+      .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
+      .attr("y1", d => this.margin.top + this.yScale(d.high))
+      .attr("y2", d => this.margin.top + this.yScale(d.low))
+      .attr("x1", d => this.margin.left + this.xScale(d.date))
+      .attr("x2", d => this.margin.left + this.xScale(d.date));
+    this.svg.selectAll(".x-axis").call(this.xAxis);
+    this.svg.selectAll(".y-axis").call(this.yAxis);
   }
-
-
-  private zoomend(event): void {
-    this.xMin = this.dates[this.xMinIdx];
-    this.xMax = this.dates[this.xMaxIdx];
-    var t = event.transform;
-    var resizeTimer;
-    let xScaleZ = t.rescaleX(this.xScale);
-    clearTimeout(resizeTimer)
-    resizeTimer = setTimeout(() => {
-      if ((xScaleZ.domain()[1] - xScaleZ.domain()[0]) > 10) {
-        if (this.xMax === undefined) {
-          this.xMax = this.dates[this.dates.length - 1];
-        }
-
-        this.filteredData = this.visibleData.filter(d => ((d.date >= this.xMin) && (d.date <= this.xMax)))
-        var minP = +d3.min(this.filteredData, d => d.low)
-        var maxP = +d3.max(this.filteredData, d => d.high)
-        var buffer = (maxP - minP) * 0.1
-        this.yMin = minP - buffer
-        this.yMax = maxP + buffer
-        const p = d3.precisionFixed(0.01);
-        const f = d3.format("." + p + "f");
-        this.yScale.domain([+f(this.yMin), +f(this.yMax)]).nice();
-        this.yMin = this.yScale.domain()[0];
-        this.yMax = this.yScale.domain()[1];
-        this.candles = this.clipPath.selectAll(".candle");
-        this.candles.transition()
-          .duration(this.transitionDuration)
-          .attr("y", (d) => this.margin.top + this.yScale(Math.max(d.open, d.close)))
-          .attr("height", (d) => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
-        this.stems = this.clipPath.selectAll(".stem");
-        this.stems.transition()
-          .duration(this.transitionDuration)
-          .attr("y1", (d) => this.margin.top + this.yScale(d.high))
-          .attr("y2", (d) => this.margin.top + this.yScale(d.low));
-
-        this.gY.transition()
-          .duration(this.transitionDuration)
-          .call(d3.axisRight(this.yScale).tickFormat(d3.format(",.2f")))
-          .selectAll("path, line")
-          .attr("stroke", 'azure');
-
-        this.svg.selectAll("text").transition()
-          .duration(this.transitionDuration)
-          .attr("fill", 'azure');
-      }
-    }, 500)
-  
-}
 
   private resizeChart(): void {
     this.xMin = this.setMinValue(this.filteredData, "date");
