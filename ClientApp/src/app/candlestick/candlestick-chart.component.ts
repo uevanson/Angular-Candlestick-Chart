@@ -101,7 +101,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.dataSubscription.unsubscribe();
   }
 
-  public onResize(event: any) {
+  public onResize(event: any): void {
     this.setElementDimensions(window.innerHeight, window.innerWidth);
     this.resizeChart();
   }
@@ -144,7 +144,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.xRange = [0, this.innerWidth(this.defaultWidth)];
     this.xDomain = this.weekdaysScale(this.xMin, this.xMax, 1);
     this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
-    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2);
+    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2, 1);
     this.xAxis = d3.axisBottom(this.xScale).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks);
     var minP = +this.setMinValue(data, "low");
     var maxP = +this.setMaxValue(data, "high");
@@ -215,19 +215,19 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
           enter
             .append("line")
             .attr("class", "stem")
-            .attr("x1", (d) => { return this.margin.left + this.xScale(d.date) })
-            .attr("x2", (d) => { return this.margin.left + this.xScale(d.date) })
-            .attr("y1", d => this.margin.top + this.yScale(d.high))
-            .attr("y2", d => this.margin.top + this.yScale(d.low))
-            .attr("stroke", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
+            .attr("x1", (d: RawHistoricData) => { console.log(d); return this.margin.left + this.xScale(d.date); })
+            .attr("x2", (d: RawHistoricData) => { return this.margin.left + this.xScale(d.date) })
+            .attr("y1", (d: RawHistoricData) => this.margin.top + this.yScale(d.high))
+            .attr("y2", (d: RawHistoricData) => this.margin.top + this.yScale(d.low))
+            .attr("stroke", (d: RawHistoricData) => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
         ,
         update =>
           update
-            .attr("x1", d => { return this.margin.left + this.xScale(d.date) })
-            .attr("x2", d => { return this.margin.left + this.xScale(d.date) })
-            .attr("y1", d => this.margin.top + this.yScale(d.high))
-            .attr("y2", d => this.margin.top + this.yScale(d.low))
-            .attr("stroke", d => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
+            .attr("x1", (d: RawHistoricData) => { return this.margin.left + this.xScale(d.date) })
+            .attr("x2", (d: RawHistoricData) => { return this.margin.left + this.xScale(d.date) })
+            .attr("y1", (d: RawHistoricData) => this.margin.top + this.yScale(d.high))
+            .attr("y2", (d: RawHistoricData) => this.margin.top + this.yScale(d.low))
+            .attr("stroke", (d: RawHistoricData) => (d.open === d.close) ? "silver" : (d.open > d.close) ? "red" : "green")
         ,
         exit =>
           exit.attr("opacity", 0)
@@ -287,8 +287,8 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
 
   }
 
-  private weeksScale(start: Date, stop: Date, stride: number): Date[] {
-    return d3.utcMonday.every(stride).range(start, stop);
+  private weeksScale(start: Date, stop: Date, stride: number, addDays: number): Date[] {
+    return d3.utcMonday.every(stride).range(start, new Date(stop.setDate(stop.getDate() + addDays)));
   }
   private weekdaysScale(start: Date, stop: Date, addDays: number): Date[] {
     return d3.utcDays(start, new Date(stop.setDate(stop.getDate() + addDays)), 1).filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6);
@@ -321,7 +321,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.xRange = [0, this.innerWidth(this.defaultWidth)];
     this.xDomain = this.weekdaysScale(this.xMin, this.xMax, 0);
     this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
-    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2);
+    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2, 1);
 
     var minP = +this.setMinValue(this.filteredData, "low")
     var maxP = +this.setMaxValue(this.filteredData, "high")
@@ -367,17 +367,17 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.candles = this.clipPath.selectAll(".candle");
     this.candles
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
-      .attr("x", d => this.margin.left + this.xScale(d.date) - this.xScale.bandwidth() / 2)
+      .attr("x", (d: RawHistoricData) => this.margin.left + this.xScale(d.date) - this.xScale.bandwidth() / 2)
       .attr("width", this.xScale.bandwidth())
-      .attr("y", d => this.margin.top + this.yScale(Math.max(d.open, d.close)))
+      .attr("y", (d: RawHistoricData) => this.margin.top + this.yScale(Math.max(d.open, d.close)))
       .attr("height", d => (d.open === d.close) ? 1 : this.yScale(Math.min(d.open, d.close)) - this.yScale(Math.max(d.open, d.close)));
     this.stems = this.clipPath.selectAll(".stem");
     this.stems
       .transition().ease(d3.easePolyInOut).duration(this.transitionDuration)
-      .attr("y1", d => this.margin.top + this.yScale(d.high))
-      .attr("y2", d => this.margin.top + this.yScale(d.low))
-      .attr("x1", d => this.margin.left + this.xScale(d.date))
-      .attr("x2", d => this.margin.left + this.xScale(d.date));
+      .attr("y1", (d: RawHistoricData) => this.margin.top + this.yScale(d.high))
+      .attr("y2", (d: RawHistoricData) => this.margin.top + this.yScale(d.low))
+      .attr("x1", (d: RawHistoricData) => this.margin.left + this.xScale(d.date))
+      .attr("x2", (d: RawHistoricData) => this.margin.left + this.xScale(d.date));
   }
 
 }
