@@ -130,8 +130,8 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.xMax = this.setMaxValue(data, "date");
     this.xRange = [0, this.innerWidth(this.defaultWidth)];
     this.xDomain = this.weekdaysScale(this.xMin, this.xMax, 1);
-    this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
-    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2, 1);
+    this.xScale = d3.scaleBand(this.xDomain, this.xRange).paddingInner(this.xPadding).align(0.5);
+    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2, 0);
     this.xAxis = d3.axisBottom(this.xScale).tickFormat(d3.utcFormat(this.xFormat)).tickValues(this.xTicks);
     var minP: number = +this.setMinValue(data, "low");
     var maxP: number = +this.setMaxValue(data, "high");
@@ -143,6 +143,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.yMin = this.yScale.domain()[0];
     this.yMax = this.yScale.domain()[1];
     this.yAxis = d3.axisRight(this.yScale).tickFormat(d3.format(",.2f"));
+    data[data.length - 1].date = new Date(data[data.length - 1].date.setDate(data[data.length - 1].date.getDate() - 1)) // random hack required
 
     if (!init) {
       this.svg.select<SVGGElement>('#xAxis')
@@ -202,7 +203,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
           enter
             .append("line")
             .attr("class", "stem")
-            .attr("x1", (d: RawHistoricData) => { console.log(d.date); return this.margin.left + this.xScale(d.date); })
+            .attr("x1", (d: RawHistoricData) => { return this.margin.left + this.xScale(d.date); })
             .attr("x2", (d: RawHistoricData) => { return this.margin.left + this.xScale(d.date) })
             .attr("y1", (d: RawHistoricData) => { return this.margin.top + this.yScale(d.high) })
             .attr("y2", (d: RawHistoricData) => { return this.margin.top + this.yScale(d.low) })
@@ -282,7 +283,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   private zoomed(event): void {
-    this.xScale = this.xScale.range([0, this.innerWidth(this.defaultWidth)].map(d => event.transform.applyX(d)));
+    this.xScale = this.xScale.range([0, this.innerWidth(this.defaultWidth)].map(d => event.transform.applyX(d))).align(0.5);
     this.yScale = this.yScale.range([this.innerHeight(this.defaultHeight), 0].map(d => event.transform.applyY(d)))
     this.candles = this.clipPath.selectAll(".candle");
     this.candles
@@ -303,12 +304,10 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   private resizeChart(): void {
-    this.xMin = this.setMinValue(this.filteredData, "date");
-    this.xMax = this.setMaxValue(this.filteredData, "date");
+
     this.xRange = [0, this.innerWidth(this.defaultWidth)];
-    this.xDomain = this.weekdaysScale(this.xMin, this.xMax, 0);
-    this.xScale = d3.scaleBand(this.xDomain, this.xRange).padding(this.xPadding);
-    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2, 1);
+    this.xScale = d3.scaleBand(this.xDomain, this.xRange).paddingInner(this.xPadding).align(0.5);
+    this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2, 0);
 
     var minP: number = +this.setMinValue(this.filteredData, "low")
     var maxP: number = +this.setMaxValue(this.filteredData, "high")
