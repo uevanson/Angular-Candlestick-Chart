@@ -308,15 +308,7 @@ export class CandlestickChartComponent implements OnInit, AfterViewInit, OnDestr
     this.xRange = [0, this.innerWidth(this.defaultWidth)];
     this.xScale = d3.scaleBand(this.xDomain, this.xRange).paddingInner(this.xPadding).align(0.5);
     this.xTicks = this.weeksScale(d3.min(this.xDomain), d3.max(this.xDomain), 2, 0);
-
-    var minP: number = +this.setMinValue(this.filteredData, 'low')
-    var maxP: number = +this.setMaxValue(this.filteredData, 'high')
-    var buffer = (maxP - minP) * 0.1
-    this.yMin = minP - buffer
-    this.yMax = maxP + buffer
     this.yScale = this.yScale.rangeRound([this.innerHeight(this.defaultHeight), 0]);
-    this.yMin = this.yScale.domain()[0];
-    this.yMax = this.yScale.domain()[1];
 
     this.svg.select('#rect')
       .transition()
